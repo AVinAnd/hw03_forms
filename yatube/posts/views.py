@@ -7,101 +7,88 @@ from .forms import PostForm
 
 
 POSTS_ON_SCREEN = 10
-CHARS_IN_TITLE = 30
+
+
+def add_paginator(request, object_list, per_page=POSTS_ON_SCREEN):
+    paginator = Paginator(object_list, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return page_obj
 
 
 def index(request):
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, POSTS_ON_SCREEN)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
     context = {
-        'page_obj': page_obj
+        'page_obj': add_paginator(request, post_list)
     }
     return render(request, 'posts/index.html', context)
 
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    post_list = group.posts.all()
-    paginator = Paginator(post_list, POSTS_ON_SCREEN)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    post_list = group.posts.select_related('author').all()
     context = {
         'group': group,
-        'page_obj': page_obj,
+        'page_obj': add_paginator(request, post_list),
     }
     return render(request, 'posts/group_list.html', context)
 
 
 def profile(request, username):
-    username = get_object_or_404(User, username=username)
-    post_list = Post.objects.all().filter(author=username)
-    paginator = Paginator(post_list, POSTS_ON_SCREEN)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    posts_by_author = post_list.count()
+    author = get_object_or_404(User, username=username)
+    post_list = Post.objects.filter(author=author)
     context = {
-        'username': username,
-        'page_obj': page_obj,
-        'posts_by_author': posts_by_author,
+        'author': author,
+        'page_obj': add_paginator(request, post_list),
     }
     return render(request, 'posts/profile.html', context)
 
 
 def post_details(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    posts_by_author = Post.objects.all().filter(author=post.author).count()
-    title = post.text[:CHARS_IN_TITLE]
+    author = User.objects.get(username=post.author)
     context = {
         'post': post,
-        'posts_by_author': posts_by_author,
-        'title': title,
+        'author': author
     }
     return render(request, 'posts/post_detail.html', context)
 
 
 @login_required
 def post_create(request):
+    form = PostForm(request.POST or None)
     if request.method == 'POST':
-        form = PostForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
-            return redirect(f'/profile/{post.author}/')
+            return redirect('posts:profile', post.author)
         return render(request, 'posts/create_post.html', {'form': form})
-    form = PostForm()
     return render(request, 'posts/create_post.html', {'form': form})
 
 
 def author_only(func):
     def check_author(request, post_id):
-        post = Post.objects.get(pk=post_id)
+        post = get_object_or_404(Post, pk=post_id)
         if request.user == post.author:
             return func(request, post_id)
-        return redirect(f'/posts/{post_id}')
+        return redirect('posts:post_details', post_id)
     return check_author
 
 
 @author_only
 def post_edit(request, post_id):
+    post_id = post_id
     post = Post.objects.get(pk=post_id)
+    form = PostForm(request.POST or None, instance=post)
     if request.method == 'POST':
-        form = PostForm(request.POST)
         if form.is_valid():
-            edit_post = form.save(commit=False)
-            edit_post.id = post.id
-            edit_post.pub_date = post.pub_date
-            edit_post.author = post.author
-            edit_post.save()
-            return redirect(f'/posts/{post_id}/')
+            form.save()
+            return redirect('posts:post_details', post_id)
         return render(request, 'posts/create_post.html', {'form': form})
-    form = PostForm(instance=post)
-    is_edit = True
     context = {
         'form': form,
-        'is_edit': is_edit,
-        'post': post,
+        'is_edit': True,
+        'post_id': post_id
     }
     return render(request, 'posts/create_post.html', context)

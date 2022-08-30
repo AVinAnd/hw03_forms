@@ -1,10 +1,10 @@
 {% extends 'base/base.html' %}
 {% block title %}
-  Профайл пользователя {{ username.get_full_name }}
+  Профайл пользователя {{ author.get_full_name }}
 {% endblock %}
 {% block content %}
-  <h1>Все посты пользователя {{ username.get_full_name }}</h1>
-  <h3>Всего постов: {{ posts_by_author }}</h3>
+  <h1>Все посты пользователя {{ author.get_full_name }}</h1>
+  <h3>Всего постов: {{ author.posts.count }}</h3>
   {% for post in page_obj %}
     {% include 'includes/post_card.html' %}
       <a href="{% url 'posts:post_details' post.id %}">подробная информация</a>
