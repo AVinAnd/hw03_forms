@@ -17,7 +17,7 @@ def add_paginator(request, object_list, per_page=POSTS_ON_SCREEN):
 
 
 def index(request):
-    post_list = Post.objects.all()
+    post_list = Post.objects.select_related('author').all()
     context = {
         'page_obj': add_paginator(request, post_list)
     }
@@ -36,7 +36,7 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    post_list = Post.objects.filter(author=author)
+    post_list = author.posts.select_related('author')
     context = {
         'author': author,
         'page_obj': add_paginator(request, post_list),
@@ -46,10 +46,8 @@ def profile(request, username):
 
 def post_details(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    author = User.objects.get(username=post.author)
     context = {
         'post': post,
-        'author': author
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -57,13 +55,11 @@ def post_details(request, post_id):
 @login_required
 def post_create(request):
     form = PostForm(request.POST or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('posts:profile', post.author)
-        return render(request, 'posts/create_post.html', {'form': form})
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        return redirect('posts:profile', post.author)
     return render(request, 'posts/create_post.html', {'form': form})
 
 
@@ -78,17 +74,14 @@ def author_only(func):
 
 @author_only
 def post_edit(request, post_id):
-    post_id = post_id
-    post = Post.objects.get(pk=post_id)
+    post = get_object_or_404(Post, pk=post_id)
     form = PostForm(request.POST or None, instance=post)
-    if request.method == 'POST':
-        if form.is_valid():
-            form.save()
-            return redirect('posts:post_details', post_id)
-        return render(request, 'posts/create_post.html', {'form': form})
+    if form.is_valid():
+        form.save()
+        return redirect('posts:post_details', post_id)
+
     context = {
         'form': form,
         'is_edit': True,
-        'post_id': post_id
     }
     return render(request, 'posts/create_post.html', context)
