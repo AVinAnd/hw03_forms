@@ -1,3 +1,49 @@
-# backend_community_homework
+# Проект спринта: новые записи.
 
-[![CI](https://github.com/yandex-praktikum/hw03_forms/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw03_forms/actions/workflows/python-app.yml)
+Доработка учебного django проекта соц.сети yatube.
+
+## Технологии и запуск проекта
+
+Проект написан на языке python, с использованием фреймворка django. 
+Необходимые для работы проекта зависимости описаны в файле requirements.txt
+
+Для запуска проекта:
+- Клонируйте репозиторий
+``` 
+- git clone https://github.com/AVinAnd/api_yamdb.git 
+```
+- Активируйте виртуальное окружение 
+
+```
+python -m venv venv
+source venv/scripts/activate
+```
+- Установите зависимости
+
+``` 
+pip install -r requirements.txt
+```
+- Выполните миграции 
+```
+python manage.py makemigrations
+python manage.py migrate
+```
+- Запустите проект
+```
+python manage.py runserver
+```
+
+Проект доступен по адресу http://127.0.0.1:8000/
+
+## В проект добавлено:
+- эмуляция почтового сервера; 
+
+- настроена отправка письма при восстановлении пароля;
+
+- размещён и зарегистрирован фильтр addclass, позволяющий добавлять CSS-класс к тегу шаблона;
+
+- созданы статические страницы /about/author/ и /about/tech/;
+
+- подключена форма регистрации и авторизации пользователей;
+
+- добавлена возможность пользователям публиковать и редактировать посты;
